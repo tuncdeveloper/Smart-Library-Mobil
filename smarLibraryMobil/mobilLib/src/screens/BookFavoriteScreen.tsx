@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
-    FlatList,
     ActivityIndicator,
     StyleSheet,
     TouchableOpacity,
@@ -13,7 +12,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { getFavoriteBooksByStudentId } from '../services/bookService';
 import { BookFavoriteDTO } from '../types/book';
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,13 +26,17 @@ type RootStackParamList = {
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'BookDetail'>;
 
 const FavoriteBooksPage: React.FC = () => {
-    const [favoriteBooks, setFavoriteBooks] = useState<BookFavoriteDTO[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const heartAnim = new Animated.Value(1);
 
     const navigation = useNavigation<NavigationProp>();
-    const { user, isAuthenticated } = useAuth();
+    const {
+        user,
+        isAuthenticated,
+        favoriteBooks,
+        favoritesLoading,
+        refreshFavorites
+    } = useAuth();
 
     // Kalp animasyonu
     useEffect(() => {
@@ -58,28 +60,12 @@ const FavoriteBooksPage: React.FC = () => {
         heartAnimation();
     }, []);
 
+    // Sayfa açıldığında favorileri yenile (eğer context'te veri yoksa)
     useEffect(() => {
-        const fetchFavorites = async () => {
-            if (!user?.id) {
-                setError('Kullanıcı oturum açmamış.');
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                setError(null);
-                const books = await getFavoriteBooksByStudentId(user.id);
-                setFavoriteBooks(books);
-            } catch (err) {
-                setError('Favori kitaplar alınırken hata oluştu.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchFavorites();
-    }, [user]);
+        if (isAuthenticated && user && favoriteBooks.length === 0 && !favoritesLoading) {
+            refreshFavorites();
+        }
+    }, [isAuthenticated, user]);
 
     const handleBookPress = (bookId: number) => {
         navigation.navigate('BookDetail', { id: bookId });
@@ -162,7 +148,7 @@ const FavoriteBooksPage: React.FC = () => {
         );
     };
 
-    if (loading) {
+    if (favoritesLoading) {
         return (
             <LinearGradient
                 colors={['#667eea', '#764ba2']}
@@ -212,22 +198,7 @@ const FavoriteBooksPage: React.FC = () => {
                         <Text style={styles.errorText}>{error}</Text>
                         <TouchableOpacity
                             style={[styles.button, { backgroundColor: '#667eea' }]}
-                            onPress={() => {
-                                setLoading(true);
-                                setError(null);
-                                // Yeniden denemek için fetch işlemini tetikle
-                                const fetchFavorites = async () => {
-                                    try {
-                                        const books = await getFavoriteBooksByStudentId(user.id);
-                                        setFavoriteBooks(books);
-                                    } catch (err) {
-                                        setError('Favori kitaplar alınırken hata oluştu.');
-                                    } finally {
-                                        setLoading(false);
-                                    }
-                                };
-                                fetchFavorites();
-                            }}
+
                         >
                             <Text style={styles.buttonText}>🔄 Yeniden Dene</Text>
                         </TouchableOpacity>

@@ -21,12 +21,9 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     getAllBooks,
     getBooksByCategory,
-    searchBooksByTitle,
-    addFavoriteBook,
-    removeFavoriteBook,
-    getFavoriteBooksByStudentId
+    searchBooksByTitle
 } from '../services/bookService';
-import { BookListDTO, BookFavoriteDTO } from '../types/book';
+import { BookListDTO } from '../types/book';
 
 // Navigation tipi
 type RootStackParamList = {
@@ -57,7 +54,14 @@ const { width } = Dimensions.get('window');
 const ITEMS_PER_PAGE = 6; // Sayfa başına gösterilecek kitap sayısı
 
 const BookListScreen: React.FC = () => {
-    const { user, isAuthenticated } = useAuth();
+    const {
+        user,
+        isAuthenticated,
+        favorites,
+        addToFavorites,
+        removeFromFavorites
+    } = useAuth();
+
     const [allBooks, setAllBooks] = useState<BookListDTO[]>([]);
     const [displayedBooks, setDisplayedBooks] = useState<BookListDTO[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -65,7 +69,6 @@ const BookListScreen: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [searchText, setSearchText] = useState<string>('');
     const [selectedCategory, setSelectedCategory] = useState<string>('Tümü');
-    const [favorites, setFavorites] = useState<Set<number>>(new Set());
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(1);
 
@@ -76,9 +79,6 @@ const BookListScreen: React.FC = () => {
 
     useEffect(() => {
         fetchBooks();
-        if (isAuthenticated && user?.id) {
-            fetchFavorites();
-        }
     }, []);
 
     useEffect(() => {
@@ -127,18 +127,6 @@ const BookListScreen: React.FC = () => {
         }
     };
 
-    const fetchFavorites = async () => {
-        if (!user?.id) return;
-
-        try {
-            const favBooks: BookFavoriteDTO[] = await getFavoriteBooksByStudentId(user.id);
-            const favIds = new Set(favBooks.map(fav => fav.bookId));
-            setFavorites(favIds);
-        } catch (error) {
-            console.error('Favoriler yüklenirken hata:', error);
-        }
-    };
-
     const filterBooks = async () => {
         try {
             setLoading(true);
@@ -184,9 +172,6 @@ const BookListScreen: React.FC = () => {
         setRefreshing(true);
         setCurrentPage(1);
         await fetchBooks();
-        if (isAuthenticated && user?.id) {
-            await fetchFavorites();
-        }
         setRefreshing(false);
     };
 
@@ -200,16 +185,19 @@ const BookListScreen: React.FC = () => {
 
         try {
             if (isFavorite) {
-                await removeFavoriteBook(user.id, bookId);
-                setFavorites(prev => new Set([...prev].filter(id => id !== bookId)));
+                const success = await removeFromFavorites(bookId);
+                if (!success) {
+                    Alert.alert('Hata', 'Favorilerden çıkarma işlemi başarısız');
+                }
             } else {
-                await addFavoriteBook(user.id, bookId);
-                setFavorites(prev => new Set([...prev, bookId]));
+                const success = await addToFavorites(bookId);
+                if (!success) {
+                    Alert.alert('Hata', 'Favorilere ekleme işlemi başarısız');
+                }
             }
         } catch (error) {
             console.error('Favori işlemi başarısız:', error);
             Alert.alert('Hata', 'İşlem sırasında bir hata oluştu');
-            await fetchFavorites();
         }
     };
 
