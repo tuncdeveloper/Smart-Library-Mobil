@@ -37,43 +37,20 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'BookDetail'
 // Kategoriler
 const categories = [
     "Tümü",
-    "Aile Romanı",
-    "Aşk",
-    "Aşk / Romantik",
-    "Bildungsroman",
-    "Bilim Kurgu",
-    "Bilim Kurgu (Sci-Fi)",
-    "Büyülü Gerçekçilik",
-    "Çocuk Klasik",
-    "Deneme",
-    "Distopik",
-    "Dram",
-    "Fantastik",
-    "Felsefi",
-    "Felsefi Roman",
-    "Gotik Roman",
-    "Klasik",
-    "Macera",
-    "Mektup",
-    "Mektup Roman",
-    "Modern",
-    "Modern Klasik",
-    "Modern Roman",
-    "Novella",
-    "Otobiyografik Roman",
-    "Polisiye",
-    "Psikolojik",
-    "Realist Roman",
-    "Roman",
-    "Romantik Roman",
-    "Siyasi Alegori",
-    "Siyasi Roman",
-    "Sosyal Eleştiri",
-    "Tarihi Roman",
-    "Toplumsal Roman",
-    "Toplumcu Gerçekçi",
-    "Varoluşçu",
-    "Öykü"
+    "Klasik Türk Edebiyatı",
+    "Modern Türk Edebiyatı",
+    "Çağdaş Türk Edebiyatı",
+
+    "Rus Edebiyatı",
+    "Fransız Edebiyatı",
+    "İngiliz Edebiyatı",
+
+    "Modern Dünya Klasikleri",
+    "Çağdaş Dünya Edebiyatı",
+
+    "Çocuk Klasikleri",
+    "Fantastik"
+
 ];
 
 
