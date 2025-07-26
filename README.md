@@ -20,8 +20,9 @@ Users can log in, browse books, add them to their favorites, update personal inf
 
 ## 🧠 AI-Powered Book Recommendation System
 
-The application analyzes users' favorite books to provide personalized recommendations based on content similarity.  
-The model is trained on book titles, descriptions, and categories. Suggestions are served via a Python-based recommendation service.
+The model is trained on book titles, descriptions, and categories. Recommendations are served through a Python-based recommendation service.
+Instead of deep learning, it utilizes classical machine learning and natural language processing (NLP) techniques.
+A hybrid recommendation system has been built using advanced feature engineering, multi-vectorization strategies, and a confidence scoring system..
 
 ---
 
@@ -29,8 +30,6 @@ The model is trained on book titles, descriptions, and categories. Suggestions a
 
 The Spring Boot backend communicates with the recommendation system using `WebClient`. This reactive and non-blocking architecture ensures efficient and scalable service communication.
 
+---
 
-
-NOT : Some of the libraries used during the training of the AI model are 
-located in the .venv folder. However this folder 
-has not been included in the Git repository due to its large size
+> **Note:** Some of the libraries used during the training of the AI model are located in the `.venv` folder. However, this folder has not been included in the Git repository due to its large size.
