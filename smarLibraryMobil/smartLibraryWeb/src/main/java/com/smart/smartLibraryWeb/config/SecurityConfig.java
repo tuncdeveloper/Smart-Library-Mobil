@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/student/login", "/api/auth/student/register").permitAll()
                         .requestMatchers("/api/auth/admin/login").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("api/test/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
                         // Student endpoints - TÜM HTTP metodları için

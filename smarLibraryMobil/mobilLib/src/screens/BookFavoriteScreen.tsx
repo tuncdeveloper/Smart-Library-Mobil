@@ -16,6 +16,8 @@ import { BookFavoriteDTO } from '../types/book';
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
+import { removeFavoriteBook } from '../services/bookService';
+import { Alert } from 'react-native';
 
 type RootStackParamList = {
     BookDetail: { id: number };
@@ -37,6 +39,19 @@ const FavoriteBooksPage: React.FC = () => {
         favoritesLoading,
         refreshFavorites
     } = useAuth();
+
+    const handleRemoveFromFavorites = async (bookId: number, bookTitle: string) => {
+        if (!user) return;
+
+        try {
+            await removeFavoriteBook(user.id, bookId);
+            // Context'ten favorileri yenile
+            await refreshFavorites();
+        } catch (error) {
+            console.error('Favorilerden çıkarma hatası:', error);
+            Alert.alert('Hata', 'Kitap favorilerden çıkarılırken bir hata oluştu.');
+        }
+    };
 
     // Kalp animasyonu
     useEffect(() => {
@@ -90,9 +105,10 @@ const FavoriteBooksPage: React.FC = () => {
     const BookCard = ({ item, index }: { item: BookFavoriteDTO; index: number }) => {
         const [scaleValue] = useState(new Animated.Value(1));
         const [opacityValue] = useState(new Animated.Value(0));
+        const [heartScale] = useState(new Animated.Value(1));
+        const [isRemoving, setIsRemoving] = useState(false);
 
         useEffect(() => {
-            // Gecikmeli animasyon
             Animated.timing(opacityValue, {
                 toValue: 1,
                 duration: 500,
@@ -118,6 +134,49 @@ const FavoriteBooksPage: React.FC = () => {
             }).start();
         };
 
+        const handleHeartPress = async () => {
+            if (isRemoving) return;
+
+            setIsRemoving(true);
+
+            // Kalp animasyonu - önce büyüt sonra küçült
+            Animated.sequence([
+                Animated.timing(heartScale, {
+                    toValue: 1.3,
+                    duration: 150,
+                    easing: Easing.out(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(heartScale, {
+                    toValue: 0.8,
+                    duration: 150,
+                    easing: Easing.in(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ]).start();
+
+            // Kart animasyonu - soldur ve küçült
+            Animated.parallel([
+                Animated.timing(opacityValue, {
+                    toValue: 0,
+                    duration: 300,
+                    easing: Easing.in(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleValue, {
+                    toValue: 0.8,
+                    duration: 300,
+                    easing: Easing.in(Easing.ease),
+                    useNativeDriver: true,
+                }),
+            ]).start();
+
+            // API çağrısını yap
+            await handleRemoveFromFavorites(item.bookId, item.title);
+
+            setIsRemoving(false);
+        };
+
         return (
             <Animated.View
                 style={[
@@ -128,11 +187,28 @@ const FavoriteBooksPage: React.FC = () => {
                     }
                 ]}
             >
+                {/* Kalp butonu - sağ üst köşe */}
+                <TouchableOpacity
+                    style={styles.heartButton}
+                    onPress={handleHeartPress}
+                    disabled={isRemoving}
+                    activeOpacity={0.7}
+                >
+                    <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                        {isRemoving ? (
+                            <ActivityIndicator size="small" color="#e74c3c" />
+                        ) : (
+                            <MaterialIcons name="favorite" size={24} color="#e74c3c" />
+                        )}
+                    </Animated.View>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                     activeOpacity={0.9}
                     onPressIn={handlePressIn}
                     onPressOut={handlePressOut}
                     onPress={() => handleBookPress(item.bookId)}
+                    style={styles.bookCardContent}
                 >
                     <Text style={styles.bookCardTitle}>📖 {item.title}</Text>
                     <Text style={styles.bookCardInfo}>✍️ Yazar: {item.author}</Text>
@@ -198,7 +274,6 @@ const FavoriteBooksPage: React.FC = () => {
                         <Text style={styles.errorText}>{error}</Text>
                         <TouchableOpacity
                             style={[styles.button, { backgroundColor: '#667eea' }]}
-
                         >
                             <Text style={styles.buttonText}>🔄 Yeniden Dene</Text>
                         </TouchableOpacity>
@@ -409,17 +484,38 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
     },
+    heartButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 20,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    bookCardContent: {
+        flex: 1,
+    },
     bookCard: {
         width: CARD_WIDTH,
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
         borderRadius: 16,
         padding: 16,
+        paddingTop: 20,
         marginBottom: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 15,
         elevation: 5,
+        position: 'relative',
     },
     bookCardTitle: {
         fontSize: 16,

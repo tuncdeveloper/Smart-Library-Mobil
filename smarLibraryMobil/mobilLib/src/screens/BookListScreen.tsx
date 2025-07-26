@@ -18,6 +18,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import {BookRecommendationDTO, ModelStatsDTO, RecommendationResponseDTO} from '../types/book';
+import { getBookRecommendations } from '../services/bookService'; // Yeni ekledik
 import {
     getAllBooks,
     getBooksByCategory,
@@ -35,20 +37,45 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'BookDetail'
 // Kategoriler
 const categories = [
     "Tümü",
-    "Psikolojik",
+    "Aile Romanı",
     "Aşk",
-    "Tarihi Roman",
-    "Macera",
-    "Toplumcu Gerçekçi",
-    "Felsefi Roman",
+    "Aşk / Romantik",
+    "Bildungsroman",
+    "Bilim Kurgu",
     "Bilim Kurgu (Sci-Fi)",
-    "Siyasi Alegori",
+    "Büyülü Gerçekçilik",
+    "Çocuk Klasik",
+    "Deneme",
+    "Distopik",
+    "Dram",
     "Fantastik",
-    "Varoluşçu",
+    "Felsefi",
+    "Felsefi Roman",
+    "Gotik Roman",
+    "Klasik",
+    "Macera",
+    "Mektup",
+    "Mektup Roman",
     "Modern",
+    "Modern Klasik",
+    "Modern Roman",
+    "Novella",
+    "Otobiyografik Roman",
+    "Polisiye",
+    "Psikolojik",
+    "Realist Roman",
+    "Roman",
+    "Romantik Roman",
+    "Siyasi Alegori",
+    "Siyasi Roman",
+    "Sosyal Eleştiri",
+    "Tarihi Roman",
     "Toplumsal Roman",
-    "Dram"
+    "Toplumcu Gerçekçi",
+    "Varoluşçu",
+    "Öykü"
 ];
+
 
 const { width } = Dimensions.get('window');
 const ITEMS_PER_PAGE = 6; // Sayfa başına gösterilecek kitap sayısı
@@ -61,7 +88,9 @@ const BookListScreen: React.FC = () => {
         addToFavorites,
         removeFromFavorites
     } = useAuth();
-
+    const [showRecommendationPanel, setShowRecommendationPanel] = useState<boolean>(false);
+    const [recommendedBook, setRecommendedBook] = useState<BookListDTO | null>(null);
+    const [modelStats, setModelStats] = useState<ModelStatsDTO | null>(null);
     const [allBooks, setAllBooks] = useState<BookListDTO[]>([]);
     const [displayedBooks, setDisplayedBooks] = useState<BookListDTO[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -76,6 +105,35 @@ const BookListScreen: React.FC = () => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const searchTimeoutRef = useRef<number | null>(null);
+    const [recommendedBooks, setRecommendedBooks] = useState<BookRecommendationDTO[]>([]);
+    const [targetBookTitle, setTargetBookTitle] = useState<string>('');
+    const [recommendationLoading, setRecommendationLoading] = useState<boolean>(false);
+    const getBookRecommendationsFromAPI = async (addedBook: BookListDTO): Promise<void> => {
+        try {
+            setRecommendationLoading(true);
+
+            const response: RecommendationResponseDTO = await getBookRecommendations(
+                addedBook.title,
+                3 // 3 öneri getir
+            );
+
+            if (response.success && response.recommendations && response.recommendations.length > 0) {
+                setRecommendedBooks(response.recommendations);
+                setTargetBookTitle(addedBook.title);
+                setShowRecommendationPanel(true);
+
+                // 8 saniye sonra paneli otomatik kapat
+                setTimeout(() => {
+                    setShowRecommendationPanel(false);
+                }, 8000);
+            }
+        } catch (error) {
+            console.error('API önerisi alınamadı:', error);
+        } finally {
+            setRecommendationLoading(false);
+        }
+    };
+
 
     useEffect(() => {
         fetchBooks();
@@ -191,7 +249,14 @@ const BookListScreen: React.FC = () => {
                 }
             } else {
                 const success = await addToFavorites(bookId);
-                if (!success) {
+                if (success) {
+                    // Favoriye eklenen kitabı bul
+                    const addedBook = allBooks.find(book => book.id === bookId);
+                    if (addedBook) {
+                        // API'den öneri al
+                        await getBookRecommendationsFromAPI(addedBook);
+                    }
+                } else {
                     Alert.alert('Hata', 'Favorilere ekleme işlemi başarısız');
                 }
             }
@@ -206,6 +271,8 @@ const BookListScreen: React.FC = () => {
             setCurrentPage(page);
         }
     };
+
+    // ... (previous code remains the same)
 
     const renderBookItem = (item: BookListDTO, index: number) => {
         const isFavorite = favorites.has(item.id);
@@ -255,7 +322,7 @@ const BookListScreen: React.FC = () => {
                             <View style={styles.ratingContainer}>
                                 <MaterialIcons name="star" size={16} color="#f1c40f" />
                                 <Text style={styles.ratingText}>
-                                    {item.averageRating?.toFixed(1) || '0.0'}
+                                    {item.averageRating ? item.averageRating.toFixed(1) : '0.0'}
                                 </Text>
                             </View>
                         </View>
@@ -275,6 +342,8 @@ const BookListScreen: React.FC = () => {
             </Animated.View>
         );
     };
+
+// ... (rest of the code remains the same)
 
     const renderPagination = () => {
         if (totalPages <= 1) return null;
@@ -414,6 +483,109 @@ const BookListScreen: React.FC = () => {
         </View>
     );
 
+    const renderRecommendationPanel = () => {
+        if (!showRecommendationPanel || recommendedBooks.length === 0) return null;
+
+        return (
+            <Animated.View
+                style={[
+                    styles.recommendationPanel,
+                    {
+                        opacity: fadeAnim,
+                        transform: [{ translateY: Animated.multiply(fadeAnim, -20) }]
+                    }
+                ]}
+            >
+                <LinearGradient
+                    colors={['#ff9a56', '#ff6b6b']}
+                    style={styles.recommendationGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                >
+                    <TouchableOpacity
+                        style={styles.closeRecommendation}
+                        onPress={() => setShowRecommendationPanel(false)}
+                    >
+                        <MaterialIcons name="close" size={20} color="#fff" />
+                    </TouchableOpacity>
+
+                    <View style={styles.recommendationHeader}>
+                        <MaterialIcons name="auto-awesome" size={24} color="#fff" />
+                        <Text style={styles.recommendationTitle}>
+                            &quot;{targetBookTitle} için öneriler
+                        </Text>
+                    </View>
+
+                    {recommendationLoading ? (
+                        <View style={styles.recommendationLoading}>
+                            <ActivityIndicator size="small" color="#fff" />
+                            <Text style={styles.loadingText}>Öneriler hazırlanıyor...</Text>
+                        </View>
+                    ) : (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.recommendationsScroll}
+                        >
+                            {recommendedBooks.map((book, index) => (
+                                <View key={index} style={styles.recommendationCard}>
+                                    <View style={styles.recommendationBookInfo}>
+                                        <MaterialIcons name="menu-book" size={18} color="#fff" />
+                                        <View style={styles.recommendationTextContainer}>
+                                            <Text style={styles.recommendationBookTitle} numberOfLines={2}>
+                                                {book.title}
+                                            </Text>
+                                            <Text style={styles.recommendationBookAuthor} numberOfLines={1}>
+                                                {book.author}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.recommendationActions}>
+                                        <TouchableOpacity
+                                            style={styles.viewBookButton}
+                                            onPress={() => {
+                                                setShowRecommendationPanel(false);
+                                                // Kitabı ID ile bul ve detayına git
+                                                const foundBook = allBooks.find(b => b.title === book.title);
+                                                if (foundBook) {
+                                                    navigation.navigate('BookDetail', { id: foundBook.id });
+                                                }
+                                            }}
+                                        >
+                                            <Text style={styles.viewBookButtonText}>Görüntüle</Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={styles.addToFavoritesButton}
+                                            onPress={() => {
+                                                const foundBook = allBooks.find(b => b.title === book.title);
+                                                if (foundBook) {
+                                                    toggleFavorite(foundBook.id);
+                                                }
+                                            }}
+                                        >
+                                            <MaterialIcons name="favorite-outline" size={14} color="#fff" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    )}
+
+                    {modelStats && (
+                        <View style={styles.modelStatsInfo}>
+                            <Text style={styles.modelStatsText}>
+                                🤖 {modelStats.totalBooks} kitap arasından {recommendedBooks.length} öneri
+                            </Text>
+                        </View>
+                    )}
+                </LinearGradient>
+            </Animated.View>
+        );
+    };
+
+
     const renderStats = () => (
         <View style={styles.statsContainer}>
             <View style={styles.statItem}>
@@ -457,6 +629,7 @@ const BookListScreen: React.FC = () => {
                 }
             >
                 {renderHeader()}
+                {renderRecommendationPanel()}
                 {renderStats()}
 
                 {error ? (
@@ -482,6 +655,7 @@ const BookListScreen: React.FC = () => {
         </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {
@@ -783,6 +957,112 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: '600',
+    },
+    recommendationPanel: {
+        marginHorizontal: 15,
+        marginBottom: 20,
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 15,
+        overflow: 'hidden',
+    },
+    recommendationGradient: {
+        padding: 16,
+        borderRadius: 20,
+    },
+    closeRecommendation: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 15,
+        padding: 5,
+        zIndex: 1,
+    },
+    recommendationHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    recommendationTitle: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#fff',
+        marginLeft: 10,
+        flex: 1,
+    },
+    recommendationsScroll: {
+        maxHeight: 120,
+        paddingVertical: 4,
+    },
+    recommendationCard: {
+        width: (width - 80) / 3, // 3 kart için genişliği hesapla
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 12,
+        padding: 10, // padding'i azalttık
+        marginRight: 8, // margin'i azalttık
+    },
+    recommendationBookInfo: {
+        flexDirection: 'row',
+    },
+    recommendationTextContainer: {
+        flex: 1,
+        marginLeft: 10,
+    },
+    recommendationBookTitle: {
+        fontSize: 12, // 13'ten 12'ye düşürdük
+        fontWeight: '700',
+        color: '#fff',
+        marginBottom: 4,
+    },
+    recommendationBookAuthor: {
+        fontSize: 10, // 11'den 10'a düşürdük
+        color: 'rgba(255,255,255,0.8)',
+        marginBottom: 6,
+    },
+
+    recommendationActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 8,
+    },
+    viewBookButton: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 8, // 12'den 8'e düşürdük
+        paddingVertical: 4, // 6'dan 4'e düşürdük
+        borderRadius: 12, // 15'ten 12'ye düşürdük
+    },
+
+// viewBookButtonText font size'ını azaltın
+    viewBookButtonText: {
+        color: '#fff',
+        fontWeight: '600',
+        fontSize: 10, // 11'den 10'a düşürdük
+    },
+    addToFavoritesButton: {
+        backgroundColor: 'rgba(255,255,255,0.3)',
+        padding: 4, // 6'dan 4'e düşürdük
+        borderRadius: 12, // 15'ten 12'ye düşürdük
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    recommendationLoading: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+    },
+    modelStatsInfo: {
+        marginTop: 8,
+        alignItems: 'center',
+    },
+    modelStatsText: {
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.8)',
+        fontStyle: 'italic',
     },
 });
 

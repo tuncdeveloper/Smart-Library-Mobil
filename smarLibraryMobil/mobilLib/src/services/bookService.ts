@@ -8,7 +8,10 @@ import {
     BookDetailDTO,
     BookRatingRequestDTO,
     BookRatingResponseDTO,
-    BookRatingDetailDTO
+    BookRatingDetailDTO,
+    ModelStatsDTO,
+    RecommendationResponseDTO,
+
 } from '../types/book';
 
 const BASE_URL = '/api/books';
@@ -120,3 +123,61 @@ export const removeFavoriteBook = async (studentId: number, bookId: number): Pro
     });
     return res.data;
 };
+
+//bookService.tsx
+// 1. BookService.ts içinde getBookRecommendations fonksiyonunu güncelleyin
+export const getBookRecommendations = async (
+    bookTitle: string,
+    nRecommendations: number = 5
+): Promise<RecommendationResponseDTO> => {
+    try {
+        console.log(`📚 Öneri isteniyor: "${bookTitle}" için ${nRecommendations} adet`);
+
+        const res = await axios.get<RecommendationResponseDTO>(`api/test/recommendations/async`, {
+            params: {
+                bookTitle,
+                nRecommendations
+            },
+            timeout: 10000
+        });
+
+        console.log('✅ Öneri yanıtı alındı:', res.data);
+
+        // Önerilere ID eklemek için title'a göre kitap arama
+        if (res.data.success && res.data.recommendations) {
+            const enrichedRecommendations = await Promise.all(
+                res.data.recommendations.map(async (rec) => {
+                    try {
+                        // Title ile kitap arama yaparak ID'yi bulun
+                        const searchResults = await searchBooksByTitle(rec.title);
+                        const foundBook = searchResults.find(book =>
+                            book.title.toLowerCase() === rec.title.toLowerCase() &&
+                            book.author.toLowerCase() === rec.author.toLowerCase()
+                        );
+
+                        return {
+                            ...rec,
+                            id: foundBook?.id || null,
+                            bookId: foundBook?.id || null
+                        };
+                    } catch (error) {
+                        console.error(`ID bulunamadı: ${rec.title}`, error);
+                        return { ...rec, id: null, bookId: null };
+                    }
+                })
+            );
+
+            res.data.recommendations = enrichedRecommendations;
+        }
+
+        return res.data;
+    } catch (error) {
+        console.error('❌ Öneri alma hatası:', error);
+        return {
+            success: false,
+            message: 'Öneriler alınamadı',
+            totalRecommendations: 0
+        };
+    }
+};
+// 📊 Model İstatistikleri - Yeni eklenen

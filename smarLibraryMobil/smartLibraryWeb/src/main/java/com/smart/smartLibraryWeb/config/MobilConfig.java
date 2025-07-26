@@ -16,9 +16,9 @@ public class MobilConfig {
                 registry.addMapping("/**")
                         .allowedOrigins(
                                 "http://localhost:3000",               // React Web
-                                "http://http://192.168.1.3/:19000",            // Expo Go (web UI)
-                                "http://http://192.168.1.3/:19006",            // Expo Metro bundler
-                                "http://http://192.168.1.3/:8080"              // Android Emulator'da deneme
+                                "http://http://192.168.1.7/:19000",            // Expo Go (web UI)
+                                "http://http://192.168.1.7/:19006",            // Expo Metro bundler
+                                "http://http://192.168.1.7/:8080"              // Android Emulator'da deneme
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*");

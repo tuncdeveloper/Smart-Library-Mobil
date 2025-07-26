@@ -89,3 +89,53 @@ export type BookRatingDetailDTO = {
     totalRatings: number;
     starCount: number;
 };
+
+export interface ModelStatsDTO {
+    totalBooks: number;
+    uniqueAuthors: number;
+    uniqueCategories: number;
+    modelFeatures: number;
+    hyperparameters: { [key: string]: any };
+    confidenceThreshold: number;
+}
+
+// Recommendation Types
+export interface BookRecommendationDTO {
+    rank: number;
+    title: string;
+    author: string;
+    category: string;
+    publisher: string;
+    publicationYear: number;
+    averageRating: number;
+    totalRatings: number;
+    pageCount: number;
+    description: string;
+    similarityScore: number;
+    confidenceScore: number;
+    diversityScore: number;
+    finalScore: number;
+    confidenceDetails: { [key: string]: number };
+    recommendationReasons: string[];
+}
+
+export interface TargetBookDTO {
+    title: string;
+    author: string;
+    category: string;
+    publisher: string;
+    publicationYear: number;
+    averageRating: number;
+    totalRatings: number;
+    description: string;
+}
+//book.ts
+export interface RecommendationResponseDTO {
+    success: boolean;
+    message: string;
+    targetBook?: TargetBookDTO;
+    recommendations?: BookRecommendationDTO[];
+    totalRecommendations: number;
+}
+
+// Add to existing ModelStatsDTO
