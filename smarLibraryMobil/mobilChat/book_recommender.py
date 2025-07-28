@@ -83,7 +83,7 @@ def load_recommendation_model(model_path: str):
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 FastAPI başlıyor...")
-    model_path = "ultra_high_confidence_book_model.pkl"
+    model_path = "ultra_high_confidence_book_model_v4.pkl"
 
     success = load_recommendation_model(model_path)
     if not success:

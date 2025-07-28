@@ -37,20 +37,25 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'BookDetail'
 // Kategoriler
 const categories = [
     "Tümü",
-    "Klasik Türk Edebiyatı",
-    "Modern Türk Edebiyatı",
-    "Çağdaş Türk Edebiyatı",
-
-    "Rus Edebiyatı",
-    "Fransız Edebiyatı",
+    "Kişisel Gelişim - Ruhani",
     "İngiliz Edebiyatı",
-
-    "Modern Dünya Klasikleri",
-    "Çağdaş Dünya Edebiyatı",
-
-    "Çocuk Klasikleri",
-    "Fantastik"
-
+    "Fransız Edebiyatı",
+    "Türk Edebiyatı - Çağdaş",
+    "Brezilya Edebiyatı",
+    "Distopik - Bilim Kurgu",
+    "Türk Edebiyatı - Modern",
+    "Türk Edebiyatı - Klasik",
+    "Alman Edebiyatı",
+    "Ortadoğu Edebiyatı",
+    "Amerika Edebiyatı",
+    "Latin Amerika Edebiyatı",
+    "Distopik - Politik Alegori",
+    "Popüler Roman",
+    "Avusturya Edebiyatı",
+    "Rus Edebiyatı - Klasik",
+    "Fantastik - Fantasy",
+    "Varoluşçu Edebiyat",
+    "Portekiz Edebiyatı"
 ];
 
 
